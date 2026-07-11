@@ -430,11 +430,8 @@ export const deleteBook = async (req, res) => {
 // @access  Private (Seller only)
 export const sellerOrders = async (req, res) => {
   try {
-    const myBooks = await Book.find({ seller: req.user._id });
-    const bookIds = myBooks.map((b) => b._id);
-
-    // Find orders that contain at least one of seller's books
-    const orders = await MyOrder.find({ 'items.book': { $in: bookIds } })
+    // Find orders that contain at least one item belonging to this seller
+    const orders = await MyOrder.find({ 'items.seller': req.user._id })
       .populate('user', 'fullName email phone address')
       .populate('items.book')
       .populate('items.seller', 'fullName shopName email rating')
@@ -444,7 +441,8 @@ export const sellerOrders = async (req, res) => {
     const sanitizedOrders = orders.map(order => {
       const orderObj = order.toObject();
       orderObj.items = orderObj.items.filter(item => {
-        return item.seller?.toString() === req.user._id.toString();
+        const itemSellerId = item.seller?._id || item.seller;
+        return itemSellerId?.toString() === req.user._id.toString();
       });
       return orderObj;
     });
