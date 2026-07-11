@@ -437,6 +437,7 @@ export const sellerOrders = async (req, res) => {
     const orders = await MyOrder.find({ 'items.book': { $in: bookIds } })
       .populate('user', 'fullName email phone address')
       .populate('items.book')
+      .populate('items.seller', 'fullName shopName email rating')
       .sort({ createdAt: -1 });
 
     // Filter order items to only expose items that belong to this seller
@@ -537,8 +538,25 @@ export const updateOrderStatus = async (req, res) => {
 
     // Update item status and estimatedDelivery
     item.status = orderStatus;
-    if (estimatedDelivery !== undefined) {
-      item.estimatedDelivery = estimatedDelivery;
+
+    if (orderStatus !== 'Pending' && !item.estimatedDelivery) {
+      const defaultDate = new Date();
+      defaultDate.setDate(defaultDate.getDate() + 7);
+      item.estimatedDelivery = defaultDate;
+    }
+
+    if (estimatedDelivery) {
+      const parts = String(estimatedDelivery).split('/');
+      if (parts.length === 3) {
+        const parsedDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        if (!isNaN(parsedDate.getTime())) {
+          item.estimatedDelivery = parsedDate;
+        } else {
+          item.estimatedDelivery = new Date(estimatedDelivery);
+        }
+      } else {
+        item.estimatedDelivery = new Date(estimatedDelivery);
+      }
     }
 
     // Maintain global orderStatus field as minimum status for compatibility if needed, or simply synchronize it

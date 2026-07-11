@@ -177,8 +177,11 @@ const MyOrders = () => {
                                     <div>
                                       <h4 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>{item.book?.title}</h4>
                                       <p style={{ fontSize: '13px', color: '#64748b' }}>by {item.book?.author}</p>
-                                      <div style={{ display: 'flex', gap: '16px', marginTop: '8px', fontSize: '12px' }}>
-                                        <span>Seller: <strong>{item.book?.seller?.shopName || 'Partner Store'}</strong></span>
+                                      <div style={{ display: 'flex', gap: '16px', marginTop: '8px', fontSize: '12px', flexWrap: 'wrap', color: '#475569' }}>
+                                        <span>Seller: <strong>{item.seller?.fullName || 'Partner Seller'} ({item.seller?.shopName || 'BookVerse Store'})</strong></span>
+                                        {item.seller?.rating !== undefined && (
+                                          <span>Rating: <strong style={{ color: '#eab308' }}>★ {Number(item.seller.rating).toFixed(1)}</strong></span>
+                                        )}
                                         <span>Qty: <strong>{item.quantity}</strong></span>
                                         <span>Price: <strong>₹{item.price.toFixed(2)}</strong></span>
                                       </div>
@@ -194,7 +197,7 @@ const MyOrders = () => {
                                         🚚 Tracking status: <strong style={{ color: isCancelled ? '#ef4444' : '#2563eb' }}>{item.status}</strong>
                                       </span>
                                       <span style={{ color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                        <Calendar style={{ width: '14px', height: '14px' }} /> Est. Delivery: <strong>{item.estimatedDelivery || 'Waiting for Seller Acceptance'}</strong>
+                                        <Calendar style={{ width: '14px', height: '14px' }} /> Est. Delivery: <strong>{item.estimatedDelivery ? new Date(item.estimatedDelivery).toLocaleDateString('en-GB') : 'Waiting for Seller Acceptance'}</strong>
                                       </span>
                                     </div>
 

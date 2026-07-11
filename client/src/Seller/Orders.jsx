@@ -23,7 +23,7 @@ const Orders = () => {
             const bookId = item.book?._id || item.book;
             const key = `${order._id}-${bookId}`;
             statuses[key] = item.status;
-            estimates[key] = item.estimatedDelivery || '';
+            estimates[key] = item.estimatedDelivery ? new Date(item.estimatedDelivery).toLocaleDateString('en-GB') : '';
           });
         });
         setSelectedStatuses(statuses);

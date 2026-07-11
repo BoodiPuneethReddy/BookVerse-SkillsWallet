@@ -330,6 +330,7 @@ export const myOrders = async (req, res) => {
   try {
     const orders = await MyOrder.find({ user: req.user._id })
       .populate('items.book')
+      .populate('items.seller', 'fullName shopName email rating')
       .sort({ createdAt: -1 });
 
     return res.status(200).json({

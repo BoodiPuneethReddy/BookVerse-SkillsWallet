@@ -26,8 +26,7 @@ const orderItemSchema = new mongoose.Schema({
     default: 'Pending',
   },
   estimatedDelivery: {
-    type: String,
-    default: '',
+    type: Date,
   },
 });
 
