@@ -32,6 +32,12 @@ API.interceptors.response.use(
       : 'Something went wrong';
 
     if (status === 401) {
+      const isLoginRequest = error.config?.url?.includes('/login');
+      if (isLoginRequest) {
+        toast.error(message);
+        return Promise.reject(error);
+      }
+
       toast.error('Session expired or unauthorized. Redirecting to login...');
       
       // Determine redirection based on current path or role
