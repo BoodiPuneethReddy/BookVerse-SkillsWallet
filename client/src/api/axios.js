@@ -2,7 +2,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 
 const API = axios.create({
-  baseURL: 'http://localhost:8000/api',
+ baseURL: "https://bookverse-api-64ja.onrender.com/api",
   withCredentials: true,
 });
 
