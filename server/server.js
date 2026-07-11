@@ -36,9 +36,23 @@ const app = express();
 // Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://book-verse-skills-wallet.vercel.app"
+];
+
 app.use(cors({
-  origin: 'http://localhost:5173', // default Vite dev server
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (e.g. Postman)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
 }));
 app.use(helmet({
   crossOriginResourcePolicy: false // Allow loading images from different origins
