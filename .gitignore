@@ -26,3 +26,7 @@ coverage/
 
 # Uploads
 server/uploads/
+node_modules/
+.cache/
+server/node_modules/
+client/node_modules/
