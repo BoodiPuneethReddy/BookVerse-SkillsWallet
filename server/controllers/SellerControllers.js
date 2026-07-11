@@ -156,19 +156,28 @@ export const profile = async (req, res) => {
   }
 };
 
-// @desc    Get seller dashboard statistics
-// @route   GET /api/seller/dashboard
-// @access  Private (Seller only)
 export const dashboard = async (req, res) => {
   try {
     const books = await Book.find({ seller: req.user._id });
     const totalBooks = books.length;
     const totalStock = books.reduce((acc, curr) => acc + curr.stock, 0);
 
-    // Count orders containing this seller's books
-    const bookIds = books.map((b) => b._id);
-    const orders = await MyOrder.find({ 'items.book': { $in: bookIds } });
+    // Find orders that contain at least one item belonging to this seller
+    const orders = await MyOrder.find({ 'items.seller': req.user._id });
     const totalOrders = orders.length;
+
+    // Calculate actual revenue and total books sold for Delivered items
+    let estimatedRevenue = 0;
+    let totalSales = 0; // Total quantity of delivered books
+
+    for (const order of orders) {
+      for (const item of order.items) {
+        if (item.seller.toString() === req.user._id.toString() && item.status === 'Delivered') {
+          estimatedRevenue += item.price * item.quantity;
+          totalSales += item.quantity;
+        }
+      }
+    }
 
     return res.status(200).json({
       success: true,
@@ -177,6 +186,8 @@ export const dashboard = async (req, res) => {
         totalBooks,
         totalStock,
         totalOrders,
+        estimatedRevenue,
+        totalSales,
         books,
       },
     });

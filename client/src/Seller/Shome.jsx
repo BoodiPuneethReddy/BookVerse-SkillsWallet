@@ -25,6 +25,8 @@ const Shome = () => {
     totalBooks: 0,
     totalStock: 0,
     totalOrders: 0,
+    estimatedRevenue: 0,
+    totalSales: 0,
     books: []
   });
   const [loading, setLoading] = useState(true);
@@ -39,6 +41,8 @@ const Shome = () => {
             totalBooks: res.data.data.totalBooks,
             totalStock: res.data.data.totalStock,
             totalOrders: res.data.data.totalOrders,
+            estimatedRevenue: res.data.data.estimatedRevenue,
+            totalSales: res.data.data.totalSales,
             books: res.data.data.books || []
           });
         }
@@ -57,10 +61,9 @@ const Shome = () => {
     fetchStats();
   }, []);
 
-  const maxValue = Math.max(stats.totalBooks, stats.totalOrders, 1);
+  const maxValue = Math.max(stats.totalBooks, stats.totalSales, 1);
 
-  // Calculate mock revenue: assuming average price of books is ₹399
-  const estimatedRevenue = stats.totalOrders * 399.0;
+  const estimatedRevenue = stats.estimatedRevenue;
 
   // Find books that have low stock (< 5)
   const lowStockBooks = stats.books.filter((b) => b.stock < 5);
@@ -135,9 +138,9 @@ const Shome = () => {
                   <div className="chart-bar-column">
                     <div 
                       className="chart-bar-fill fill-orange" 
-                      style={{ height: `${(stats.totalOrders / maxValue) * 200}px` }}
+                      style={{ height: `${(stats.totalSales / maxValue) * 200}px` }}
                     >
-                      <span className="fill-val-label">{stats.totalOrders}</span>
+                      <span className="fill-val-label">{stats.totalSales}</span>
                     </div>
                     <span className="column-label">Total Sales</span>
                   </div>
