@@ -12,6 +12,8 @@ import Uhome from './User/Uhome';
 import Products from './User/Products';
 import Uitem from './User/Uitem';
 import MyOrders from './User/MyOrders';
+import Cart from './User/Cart';
+import Checkout from './User/Checkout';
 
 // Seller Portal Pages
 import Slogin from './Seller/Slogin';
@@ -45,6 +47,8 @@ function App() {
         <Route path="/user/books" element={<Products />} />
         <Route path="/user/book/:id" element={<Uitem />} />
         <Route path="/user/orders" element={<MyOrders />} />
+        <Route path="/user/cart" element={<Cart />} />
+        <Route path="/user/checkout" element={<Checkout />} />
 
         {/* Seller Routes */}
         <Route path="/seller/signup" element={<Ssignup />} />

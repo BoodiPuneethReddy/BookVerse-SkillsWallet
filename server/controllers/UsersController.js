@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import Book from '../models/Book.js';
 import MyOrder from '../models/MyOrder.js';
+import Cart from '../models/Cart.js';
 import generateToken from '../utils/generateToken.js';
 
 // @desc    Register a new user
@@ -287,6 +288,9 @@ export const placeOrder = async (req, res) => {
         book: book._id,
         quantity: item.quantity,
         price: book.price,
+        seller: book.seller,
+        status: 'Pending',
+        estimatedDelivery: '',
       });
     }
 
@@ -299,6 +303,12 @@ export const placeOrder = async (req, res) => {
       orderStatus: 'Pending',
       totalAmount: calculatedTotal,
     });
+
+    // Clear active user Cart on successful order
+    await Cart.findOneAndUpdate(
+      { user: req.user._id },
+      { items: [], subtotal: 0 }
+    );
 
     return res.status(201).json({
       success: true,
@@ -397,6 +407,171 @@ export const addReview = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || 'Server error adding review',
+    });
+  }
+};
+
+// @desc    Get active user cart
+// @route   GET /api/cart
+// @access  Private (User only)
+export const getCart = async (req, res) => {
+  try {
+    let cart = await Cart.findOne({ user: req.user._id }).populate('items.book');
+    if (!cart) {
+      cart = await Cart.create({
+        user: req.user._id,
+        items: [],
+        subtotal: 0,
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      data: cart,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Server error fetching cart',
+    });
+  }
+};
+
+// @desc    Add / merge book to cart
+// @route   POST /api/cart/add
+// @access  Private (User only)
+export const addToCart = async (req, res) => {
+  try {
+    const { bookId, quantity } = req.body;
+    const qty = Number(quantity) || 1;
+
+    const book = await Book.findById(bookId);
+    if (!book) {
+      return res.status(404).json({
+        success: false,
+        message: 'Book not found',
+      });
+    }
+
+    let cart = await Cart.findOne({ user: req.user._id });
+    if (!cart) {
+      cart = new Cart({
+        user: req.user._id,
+        items: [],
+        subtotal: 0,
+      });
+    }
+
+    const existingIndex = cart.items.findIndex(item => item.book.toString() === bookId);
+    if (existingIndex > -1) {
+      cart.items[existingIndex].quantity += qty;
+    } else {
+      cart.items.push({
+        book: book._id,
+        seller: book.seller,
+        quantity: qty,
+        price: book.price,
+      });
+    }
+
+    // Recalculate subtotal
+    cart.subtotal = cart.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    await cart.save();
+
+    const populatedCart = await Cart.findById(cart._id).populate('items.book');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Item added to cart',
+      data: populatedCart,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Server error adding to cart',
+    });
+  }
+};
+
+// @desc    Update item quantity inside cart
+// @route   PUT /api/cart/update
+// @access  Private (User only)
+export const updateCartQty = async (req, res) => {
+  try {
+    const { bookId, quantity } = req.body;
+    const qty = Number(quantity);
+
+    if (qty < 1) {
+      return res.status(400).json({
+        success: false,
+        message: 'Quantity must be at least 1',
+      });
+    }
+
+    const cart = await Cart.findOne({ user: req.user._id });
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cart not found',
+      });
+    }
+
+    const itemIndex = cart.items.findIndex(item => item.book.toString() === bookId);
+    if (itemIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Item not found in cart',
+      });
+    }
+
+    cart.items[itemIndex].quantity = qty;
+    cart.subtotal = cart.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    await cart.save();
+
+    const populatedCart = await Cart.findById(cart._id).populate('items.book');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Cart updated successfully',
+      data: populatedCart,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Server error updating cart',
+    });
+  }
+};
+
+// @desc    Remove item from cart
+// @route   DELETE /api/cart/remove/:bookId
+// @access  Private (User only)
+export const removeFromCart = async (req, res) => {
+  try {
+    const { bookId } = req.params;
+
+    const cart = await Cart.findOne({ user: req.user._id });
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cart not found',
+      });
+    }
+
+    cart.items = cart.items.filter(item => item.book.toString() !== bookId);
+    cart.subtotal = cart.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    await cart.save();
+
+    const populatedCart = await Cart.findById(cart._id).populate('items.book');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Item removed from cart',
+      data: populatedCart,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Server error removing item from cart',
     });
   }
 };

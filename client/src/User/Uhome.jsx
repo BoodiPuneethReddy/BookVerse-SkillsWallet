@@ -36,6 +36,7 @@ const Uhome = () => {
   const [ordersCount, setOrdersCount] = useState(0);
   const [purchasedBooksCount, setPurchasedBooksCount] = useState(0);
   const [recentOrders, setRecentOrders] = useState([]);
+  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -61,6 +62,12 @@ const Uhome = () => {
             return acc + (order.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0);
           }, 0);
           setPurchasedBooksCount(totalQty);
+        }
+
+        const cartRes = await API.get('/cart');
+        if (cartRes.data.success) {
+          const totalCartQty = cartRes.data.data.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+          setCartCount(totalCartQty);
         }
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
@@ -120,6 +127,7 @@ const Uhome = () => {
           <Link to="/user/home" className="active-nav"><HomeIcon className="nav-btn-icon" /> Home</Link>
           <Link to="/user/books"><Book className="nav-btn-icon" /> Books</Link>
           <Link to="/user/orders"><ShoppingBag className="nav-btn-icon" /> My Orders</Link>
+          <Link to="/user/cart" style={{ fontWeight: 600 }}>🛒 Cart ({cartCount})</Link>
           <button onClick={handleLogout} className="logout-btn"><LogOut className="nav-btn-icon" /> Logout</button>
         </div>
       </header>

@@ -15,6 +15,20 @@ const orderItemSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  seller: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Seller',
+    required: true,
+  },
+  status: {
+    type: String,
+    enum: ['Pending', 'Confirmed', 'Packed', 'Shipped', 'Out For Delivery', 'Delivered', 'Cancelled'],
+    default: 'Pending',
+  },
+  estimatedDelivery: {
+    type: String,
+    default: '',
+  },
 });
 
 const myOrderSchema = new mongoose.Schema(

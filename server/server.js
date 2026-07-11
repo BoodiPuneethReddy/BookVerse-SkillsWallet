@@ -14,6 +14,7 @@ import sellerRoutes from './routes/sellerRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import bookRoutes from './routes/bookRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
+import cartRoutes from './routes/cartRoutes.js';
 import Book from './models/Book.js';
 import Seller from './models/Seller.js';
 import User from './models/User.js';
@@ -69,6 +70,7 @@ app.use('/api/seller', sellerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/cart', cartRoutes);
 
 // Statistics Route (Real counts from MongoDB Atlas)
 app.get('/api/stats', async (req, res) => {

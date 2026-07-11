@@ -439,13 +439,19 @@ export const sellerOrders = async (req, res) => {
       .populate('items.book')
       .sort({ createdAt: -1 });
 
-    // Filter order items to only show seller's own books for convenience if needed,
-    // but the prompt says "Find orders containing those books. Populate User, Book. Return orders."
-    // Let's return the complete orders but we can annotate them.
+    // Filter order items to only expose items that belong to this seller
+    const sanitizedOrders = orders.map(order => {
+      const orderObj = order.toObject();
+      orderObj.items = orderObj.items.filter(item => {
+        return item.seller?.toString() === req.user._id.toString();
+      });
+      return orderObj;
+    });
+
     return res.status(200).json({
       success: true,
       message: 'Seller orders fetched successfully',
-      data: orders,
+      data: sanitizedOrders,
     });
   } catch (error) {
     return res.status(500).json({
@@ -460,13 +466,20 @@ export const sellerOrders = async (req, res) => {
 // @access  Private (Seller only)
 export const updateOrderStatus = async (req, res) => {
   try {
-    const { orderStatus } = req.body;
-    const allowedStatuses = ['Pending', 'Confirmed', 'Packed', 'Shipped', 'Delivered', 'Cancelled'];
+    const { orderStatus, bookId, estimatedDelivery } = req.body;
+    const allowedStatuses = ['Pending', 'Confirmed', 'Packed', 'Shipped', 'Out For Delivery', 'Delivered', 'Cancelled'];
 
     if (!orderStatus || !allowedStatuses.includes(orderStatus)) {
       return res.status(400).json({
         success: false,
         message: `Please provide a valid orderStatus. Allowed: ${allowedStatuses.join(', ')}`,
+      });
+    }
+
+    if (!bookId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide bookId to update a specific item status',
       });
     }
 
@@ -478,65 +491,63 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
-    // Verify that this order contains at least one of this seller's books
-    const myBooks = await Book.find({ seller: req.user._id });
-    const bookIds = myBooks.map((b) => b._id.toString());
+    // Find the specific item belonging to this seller and matching bookId
+    const item = order.items.find(
+      (item) => item.book.toString() === bookId && item.seller.toString() === req.user._id.toString()
+    );
 
-    const hasSellerBook = order.items.some((item) => bookIds.includes(item.book.toString()));
-    if (!hasSellerBook) {
+    if (!item) {
       return res.status(403).json({
         success: false,
-        message: 'Unauthorized: This order does not contain books from your shop',
+        message: 'Unauthorized: This order item does not belong to your shop',
       });
     }
 
-    if (order.orderStatus === 'Delivered') {
+    if (item.status === 'Delivered') {
       return res.status(400).json({
         success: false,
-        message: 'Order has already been Delivered. Inventory changes are locked.',
+        message: 'Order item has already been Delivered. Inventory status is locked.',
       });
     }
 
     if (orderStatus === 'Delivered') {
       // Validate stock levels before making any database updates
-      for (const item of order.items) {
-        const book = await Book.findById(item.book);
-        if (!book) {
-          return res.status(404).json({
-            success: false,
-            message: `Book listing not found for ID: ${item.book}`,
-          });
-        }
-        
-        // Multi-seller validation: Only deduct stock for this seller's specific listing
-        if (book.seller.toString() === req.user._id.toString()) {
-          if (book.stock < item.quantity) {
-            return res.status(400).json({
-              success: false,
-              message: `Insufficient stock for book "${book.title}". Available: ${book.stock}, Ordered: ${item.quantity}. Cannot complete delivery.`,
-            });
-          }
-        }
+      const book = await Book.findById(item.book);
+      if (!book) {
+        return res.status(404).json({
+          success: false,
+          message: `Book listing not found for ID: ${item.book}`,
+        });
       }
 
-      // Deduct stock for items belonging to this seller
-      for (const item of order.items) {
-        const book = await Book.findById(item.book);
-        if (book && book.seller.toString() === req.user._id.toString()) {
-          book.stock = Math.max(0, book.stock - item.quantity);
-          await book.save();
-        }
+      if (book.stock < item.quantity) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient stock for book "${book.title}". Available: ${book.stock}, Ordered: ${item.quantity}. Cannot complete delivery.`,
+        });
       }
 
+      // Deduct stock for this item
+      book.stock = Math.max(0, book.stock - item.quantity);
+      await book.save();
+
+      // Check if all items in this order are now Delivered or Paid, and set paymentStatus
       order.paymentStatus = 'Paid';
     }
 
+    // Update item status and estimatedDelivery
+    item.status = orderStatus;
+    if (estimatedDelivery !== undefined) {
+      item.estimatedDelivery = estimatedDelivery;
+    }
+
+    // Maintain global orderStatus field as minimum status for compatibility if needed, or simply synchronize it
     order.orderStatus = orderStatus;
 
     const updatedOrder = await order.save();
     return res.status(200).json({
       success: true,
-      message: 'Order status updated successfully',
+      message: 'Order item status updated successfully',
       data: updatedOrder,
     });
   } catch (error) {

@@ -54,19 +54,26 @@ const Products = () => {
     fetchBooks();
   }, [searchParams]);
 
-  // Load wishlist from user profile
+  const [cartCount, setCartCount] = useState(0);
+
+  // Load wishlist from user profile and active cart count
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchUserData = async () => {
       try {
         const res = await API.get('/users/profile');
         if (res.data.success) {
           setWishlist(res.data.data.wishlist || []);
         }
+        const cartRes = await API.get('/cart');
+        if (cartRes.data.success) {
+          const totalCartQty = cartRes.data.data.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+          setCartCount(totalCartQty);
+        }
       } catch (err) {
-        console.error('Error fetching profile for wishlist', err);
+        console.error('Error fetching user metadata', err);
       }
     };
-    fetchProfile();
+    fetchUserData();
   }, []);
 
   const handleLogout = () => {
@@ -154,6 +161,7 @@ const Products = () => {
           <Link to="/user/home"><HomeIcon className="nav-btn-icon" /> Home</Link>
           <Link to="/user/books" className="active-nav"><BookOpen className="nav-btn-icon" /> Books</Link>
           <Link to="/user/orders"><ShoppingBag className="nav-btn-icon" /> My Orders</Link>
+          <Link to="/user/cart" style={{ fontWeight: 600 }}>🛒 Cart ({cartCount})</Link>
           <button onClick={handleLogout} className="logout-btn"><LogOut className="nav-btn-icon" /> Logout</button>
         </div>
       </header>
