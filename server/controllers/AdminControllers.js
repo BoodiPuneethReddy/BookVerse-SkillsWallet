@@ -80,7 +80,14 @@ export const login = async (req, res) => {
 
     const admin = await Admin.findOne({ email });
 
-    if (admin && (await admin.matchPassword(password))) {
+    if (!admin) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid admin credentials.',
+      });
+    }
+
+    if (await admin.matchPassword(password)) {
       const token = generateToken(admin._id, 'admin');
       return res.status(200).json({
         success: true,
@@ -98,7 +105,7 @@ export const login = async (req, res) => {
     } else {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password',
+        message: 'Invalid admin credentials.',
       });
     }
   } catch (error) {

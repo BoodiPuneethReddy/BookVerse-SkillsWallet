@@ -87,7 +87,7 @@ export const login = async (req, res) => {
     if (!seller) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password',
+        message: 'Invalid seller credentials.',
       });
     }
 
@@ -119,7 +119,7 @@ export const login = async (req, res) => {
     } else {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password',
+        message: 'Invalid seller credentials.',
       });
     }
   } catch (error) {
