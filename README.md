@@ -146,27 +146,7 @@ README.md
 
 ---
 
-# 📷 Screenshots
 
-## Home
-
-(Add Screenshot)
-
-## User Dashboard
-
-(Add Screenshot)
-
-## Seller Dashboard
-
-(Add Screenshot)
-
-## Admin Dashboard
-
-(Add Screenshot)
-
-## Order Tracking
-
-(Add Screenshot)
 
 ---
 
